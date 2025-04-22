@@ -6,7 +6,7 @@ class CustomeUserManager(BaseUserManager):
     """
     def create_user(self, email, password=None, **extra_fields):
         """
-        Create and retuen a user with an email and password.
+        Create and return a user with an email and password.
         """
         
         if not email:
@@ -21,7 +21,7 @@ class CustomeUserManager(BaseUserManager):
     
     def create_superuser(self, email, password=None, **extra_fields):
         """
-        Create and retuen a superuser with an email amnd password.
+        Create and return a superuser with an email and password.
         """
 
         extra_fields.setdefault('is_staff', True)
