@@ -6,9 +6,11 @@ from django.utils import timezone
 from dotenv import load_dotenv
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
+from rest_framework.permissions import AllowAny 
 from django.contrib.auth import get_user_model
-from .serializers import RegisterUserSerializer
+from .serializers import RegisterUserSerializer, LoginSerializer
 
 
 
@@ -72,7 +74,8 @@ class RegisterUserView(APIView):
     """
     API View to register a new user via OTP and real-time email verification.
     """
-
+    permission_classes = [AllowAny]
+    
     def post(self, request):
         serializer = RegisterUserSerializer(data=request.data)
         if serializer.is_valid():
@@ -102,6 +105,8 @@ class VerifyOTPView(APIView):
     """
     API View to verify OTP and create a new user 
     """
+    permission_classes = [AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         otp_input = request.data.get("otp")
@@ -138,4 +143,46 @@ class VerifyOTPView(APIView):
             return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
+
+class LoginView(APIView):
+    """
+        Login API View for user login and token generation.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.validated_data['user']  # Get the validated user directly
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutView(APIView):
+    """
+        API View for logging out a user and invalidating their refresh token.
+    """
+
+    def post(self, request):
+        try:
+            # Get the refresh token from the request data
+            refresh_token = request.data.get("refresh_token")
+            if not refresh_token:
+                return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Blacklist the refresh token ti invalidate token
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({"message": "sucessfully logged out."}, status=status.HTTP_205_RESET_CONTENT)
+            except Exception as e:
+                return Response({"error": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({"error": f"Error logging out: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
