@@ -1,6 +1,6 @@
 # OTP Auth System 🔐
 
-A Django-based authentication system with OTP (One-Time Password) verification, real-time email validation, and JWT-based login/logout functionality.
+A Django-based authentication system with OTP (One-Time Password) verification, real-time email validation, and JWT-based login/logout and password reset functionality.
 
 ## 📌 Features
 
@@ -9,6 +9,7 @@ A Django-based authentication system with OTP (One-Time Password) verification, 
 - ✅ OTP expires in 10 minutes
 - ✅ JWT-based authentication for login
 - ✅ Secure logout with token blacklisting
+- ✅ Reset password with jwt token
 
 ---
 
@@ -120,6 +121,63 @@ Authorization: Bearer <access_token>
 - Ensures the user is fully logged out.
 
 ---
+### 5. Forgot Password API
+**Endpoint:** `api/users/forgot-password/`
+**Method:** POST
+
+Allows user to request a password reset by email. If the user exists, a secure JWT reset token is generated.
+
+**Request Body:**
+```JSON
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```JSON
+{
+  "reset_token": "<jwt_reset_token>"
+}
+```
+ - Always returns a generic success message for security (whether the user exists or not).
+
+ - The reset token is valid for 10–15 minutes.
+
+ - Can be used in the next step to reset the password.
+---
+
+---
+### 6. Reset Password API
+**Endpoint:** `/api/users/reset-password/`
+**Method:** `POST`  
+
+**Request Body:** 
+```JSON
+{
+  "token": "<jwt_reset_token>",
+  "new_password": "<New Password>"
+}
+```
+
+**Response:**
+```JSON
+{
+  {"message": "Password has been successfully reset."}
+}
+
+{
+  "message": "Invalid or expired reset token."
+}
+
+{
+  "message": "Reset token is required."
+}
+
+'''
+- Return Success message for the successful reset of the password.
+- JWT token is blacklist.
+---
 
 ## ⚙️ JWT Configuration (Sample)
 
@@ -142,6 +200,7 @@ You can test the APIs using **Postman**:
 - Register → Validate email via Mailboxlayer → Confirm OTP
 - Login → Receive tokens
 - Logout → Invalidate refresh token
+- Forgot Password → Receive JWT token → Use token to reset password
 
 ---
 

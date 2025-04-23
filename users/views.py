@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny 
 from django.contrib.auth import get_user_model
 from .serializers import RegisterUserSerializer, LoginSerializer
-
+from .utils.generate_reset_token import generate_reset_token, decode_reset_token
 
 
 load_dotenv()
@@ -186,3 +186,42 @@ class LogoutView(APIView):
             
         except Exception as e:
             return Response({"error": f"Error logging out: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        email = request.data.get("email")
+
+        try:
+            user = get_user_model().objects.get(email=email)
+            token = generate_reset_token(user.id)
+            return Response({"reset_token": token}, status=200)
+
+        except get_user_model().DoesNotExist:
+            return Response({"message": "If an account with that email exists, you will receive a reset token."}, status=200)
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        token = request.data.get("token")
+        new_password = request.data.get("new_password")
+
+        user_id = decode_reset_token(token)
+
+        if user_id =='expired' :
+            return Response({'error': "Token has expired. Please request a new reset token."}, status=status.HTTP_400_BAD_REQUEST)
+        elif user_id is None:
+            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try: 
+            user = get_user_model().objects.get(id=user_id)
+
+            # update the user's password
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+        
+        except get_user_model().DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
