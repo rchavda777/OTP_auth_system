@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from rest_framework.permissions import AllowAny 
 from django.contrib.auth import get_user_model
-from .serializers import RegisterUserSerializer, LoginSerializer
+from .serializers import RegisterUserSerializer, LoginSerializer, UserProfileSerializer
 from .utils.generate_reset_token import generate_reset_token, decode_reset_token
 
 
@@ -225,3 +225,44 @@ class ResetPasswordView(APIView):
         
         except get_user_model().DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class UserProfileAPIView(APIView):
+    def get(self, request):
+        """
+        Get the current user's profile.
+        """
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        """
+        Fully update current user's profile.
+        """
+        serializer = UserProfileSerializer(request.user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400)
+    
+    def patch(self, request):
+        """
+        Partially update current user's profile.
+        """
+
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request):
+        """
+        Deactivate user account (soft delete) data not remove from database 
+        """
+        user = request.user
+        user.is_active = False
+        user.save()
+        return Response({'message': 'user deactivated successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+

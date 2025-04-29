@@ -72,3 +72,18 @@ class LoginSerializer(serializers.Serializer):
         
         data['user'] = user
         return data
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    User profile serializer for user data Handling
+    """
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'full_name', 'phone_number',
+            'bio', 'gender', 'date_of_birth', 'address',
+            'role', 'is_active', 'date_joined'
+        ]
+        read_only_fields = ['email', 'is_active', 'date_joined']
+            
